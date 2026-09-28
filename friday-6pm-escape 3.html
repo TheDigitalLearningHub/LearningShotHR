@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Friday, 6 PM — Escape Before the Movie</title>
+<style>
+:root{--red:#E40000;--red-d:#9E0000;--char:#1A1A1A;--ink:#0A0A0A;--gold:#FFC531;--green:#2ECC71;--wood:#5a1010;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--ink);color:#fff;font-family:"Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;justify-content:center;padding:14px;overflow-x:hidden;}
+#shell{width:100%;max-width:720px;}
+button{font-family:inherit;cursor:pointer;border:none;border-radius:12px;font-weight:700;transition:transform .08s,border-color .15s,opacity .2s;}
+button:active{transform:scale(.97);}
+.big{background:var(--red);color:#fff;font-size:18px;padding:15px 40px;box-shadow:0 6px 0 var(--red-d);}
+.big:active{box-shadow:0 2px 0 var(--red-d);}
+.hide{display:none!important;}
+
+/* ---------- INTRO ---------- */
+#intro{text-align:center;padding:30px 20px;background:radial-gradient(circle at 50% 0%,#2a0000 0%,var(--ink) 70%);border-radius:22px;border:2px solid #2a2a2a;}
+.tag{display:inline-block;background:var(--red);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;border-radius:99px;font-weight:700;margin-bottom:18px;}
+.bigclock{font-family:Consolas,monospace;font-size:clamp(46px,13vw,84px);font-weight:800;color:var(--red);text-shadow:0 0 24px #e4000088;letter-spacing:2px;}
+#intro h1{font-size:clamp(24px,5.5vw,36px);letter-spacing:-1px;margin:6px 0 14px;}
+#intro p{color:#bbb;font-size:15.5px;line-height:1.8;margin-bottom:24px;}
+#intro p b{color:#fff;}
+.ticket{display:inline-flex;align-items:center;gap:10px;background:var(--gold);color:#3d2c00;font-weight:800;padding:10px 18px;border-radius:6px;font-size:14px;margin-bottom:22px;transform:rotate(-2deg);box-shadow:0 6px 16px #0009;border-left:4px dashed #3d2c0055;border-right:4px dashed #3d2c0055;}
+.rule{font-size:13px;color:#888;margin-top:18px;}
+
+/* ---------- HUD ---------- */
+#hud{display:flex;gap:10px;align-items:stretch;margin-bottom:10px;}
+.box{background:var(--char);border:2px solid #2d2d2d;border-radius:12px;padding:8px 14px;}
+.lbl{font-size:9px;letter-spacing:1.6px;color:#888;text-transform:uppercase;}
+#clock{font-family:Consolas,monospace;font-size:26px;font-weight:800;color:#fff;transition:color .3s;}
+#clock.warn{color:var(--gold);} #clock.late{color:var(--red);}
+#dots{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;}
+#dots span{width:28px;height:8px;border-radius:99px;background:#333;transition:background .3s;}
+#dots span.done{background:var(--green);} #dots span.now{background:var(--red);}
+.show{text-align:right;}
+.show .v{font-size:15px;font-weight:800;color:var(--gold);}
+
+/* ---------- SCENE / DOOR ---------- */
+#scene{position:relative;height:330px;border-radius:18px;overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 18%,#3a3a3a 0%,#161616 55%,#0a0a0a 100%);
+  border:2px solid #222;perspective:1100px;}
+#scene::before{ /* brick-ish wall */
+  content:"";position:absolute;inset:0;opacity:.18;
+  background:
+    repeating-linear-gradient(0deg,transparent 0 26px,#000 26px 28px),
+    repeating-linear-gradient(90deg,transparent 0 58px,#000 58px 60px);}
+#floor{position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(#1c1410,#0c0806);border-top:2px solid #2a1c14;}
+#lamp{position:absolute;top:0;left:50%;width:260px;height:230px;transform:translateX(-50%);
+  background:radial-gradient(ellipse at 50% 0%,#ffe9b066 0%,transparent 70%);pointer-events:none;}
+#sign{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:11px;letter-spacing:3px;color:#888;text-transform:uppercase;white-space:nowrap;}
+
+#world{position:absolute;inset:0;transition:transform .9s ease-in,opacity .9s ease-in;transform-origin:50% 62%;}
+#world.walk{transform:scale(3.2);opacity:0;}
+#world.enter{transition:none;transform:scale(.6);opacity:0;}
+
+.frame{position:absolute;left:50%;bottom:50px;width:176px;height:252px;transform:translateX(-50%);
+  border:12px solid #2b1a12;border-bottom:none;border-radius:6px 6px 0 0;
+  box-shadow:0 0 0 3px #120a06,0 20px 40px #000c;
+  background:radial-gradient(circle at 50% 55%,#fff8e0 0%,#ffd46b 35%,#e48a00 70%,#5a2a00 100%);
+  transform-style:preserve-3d;}
+.beyond{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px;opacity:0;transition:opacity .6s .5s;}
+.frame.opened .beyond{opacity:1;}
+.door{position:absolute;inset:0;transform-origin:left center;transition:transform 1.25s cubic-bezier(.6,.05,.3,1);
+  background:linear-gradient(90deg,#6b0f0f,#8f1414 45%,#6b0f0f);border-radius:2px;
+  box-shadow:inset 0 0 0 2px #3d0707, inset -8px 0 18px #0006;}
+.door.open{transform:rotateY(-104deg);}
+.door .panel{position:absolute;left:18px;right:18px;border:3px solid #4a0909;border-radius:3px;box-shadow:inset 0 0 12px #0007, 0 1px 0 #b0303066;}
+.door .p1{top:18px;height:92px;} .door .p2{top:124px;height:92px;}
+.plate{position:absolute;top:44px;left:50%;transform:translateX(-50%);background:linear-gradient(#f6d27a,#b8862b);color:#3a2600;
+  font-weight:900;font-size:17px;padding:4px 12px;border-radius:4px;box-shadow:0 2px 4px #0008;letter-spacing:1px;}
+.knob{position:absolute;right:14px;top:128px;width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffe7a0,#a8741c);box-shadow:0 2px 4px #000a;}
+.keypad{position:absolute;right:10px;top:88px;width:24px;height:30px;background:#111;border-radius:4px;border:1px solid #333;display:flex;align-items:flex-start;justify-content:center;padding-top:5px;}
+.led{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 10px var(--red);transition:.2s;}
+.led.ok{background:var(--green);box-shadow:0 0 14px var(--green);}
+.led.blink{animation:blink .18s 5;}
+@keyframes blink{50%{opacity:.1}}
+.rattle{animation:rattle .45s;}
+@keyframes rattle{20%{transform:translateX(-5px) rotate(-.6deg)}40%{transform:translateX(5px) rotate(.6deg)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+#sfx{position:absolute;top:40%;left:50%;transform:translate(-50%,-50%);font-size:28px;font-weight:900;letter-spacing:2px;opacity:0;pointer-events:none;text-shadow:0 3px 12px #000;white-space:nowrap;}
+#sfx.go{animation:sfx 1s ease-out;}
+@keyframes sfx{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-90%) scale(1)}}
+
+/* ---------- TASK ---------- */
+#task{margin-top:12px;background:var(--char);border:2px solid #2d2d2d;border-radius:18px;padding:20px;}
+#tLabel{font-size:10px;letter-spacing:2.2px;text-transform:uppercase;color:var(--red);font-weight:800;}
+#tTitle{font-size:20px;font-weight:800;margin:4px 0 6px;letter-spacing:-.3px;}
+#tStory{font-size:14.5px;color:#bbb;line-height:1.65;margin-bottom:14px;}
+.q{font-size:12px;color:#888;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.opt{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:#131313;border:2px solid #333;color:#eee;
+  font-size:14.5px;font-weight:600;padding:13px 14px;margin-bottom:9px;line-height:1.45;}
+.opt:hover{border-color:#777;}
+.opt .e{font-size:20px;flex:none;}
+.opt.used{opacity:.35;pointer-events:none;text-decoration:line-through;}
+
+/* ---------- RESULT CARD ---------- */
+#res{margin-top:12px;border-radius:18px;padding:20px;border:2px solid;}
+#res.bad{background:#1e0b0b;border-color:#5a1515;}
+#res.good{background:#0b1e12;border-color:#1f6b3b;}
+#rHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:10px;}
+#rTitle{font-size:18px;font-weight:800;}
+#rCost{font-family:Consolas,monospace;font-weight:800;font-size:15px;padding:4px 10px;border-radius:8px;white-space:nowrap;}
+#res.bad #rCost{background:var(--red);} #res.good #rCost{background:var(--green);color:#002b12;}
+#rText{font-size:14.5px;color:#ddd;line-height:1.65;}
+#rTool{margin-top:12px;font-size:17px;font-weight:700;color:#9fe3b8;background:#0006;border-radius:10px;padding:9px 12px;display:none;}
+#rBtn{margin-top:14px;padding:12px 26px;font-size:15px;}
+
+/* ---------- END ---------- */
+#end{text-align:center;background:radial-gradient(circle at 50% 0%,#1d1d1d 0%,var(--ink) 75%);border:2px solid #2a2a2a;border-radius:22px;padding:26px 20px;}
+.screen{margin:0 auto 18px;max-width:420px;aspect-ratio:2.2/1;border-radius:8px;border:6px solid #222;display:flex;align-items:center;justify-content:center;flex-direction:column;
+  background:linear-gradient(#fff6d8,#ffd46b);color:#3a2600;box-shadow:0 0 60px #ffd46b44;}
+.screen.dark{background:linear-gradient(#141414,#050505);color:#555;box-shadow:none;}
+.screen .big1{font-size:clamp(20px,5vw,30px);font-weight:900;letter-spacing:-.5px;}
+.screen .small1{font-size:13px;margin-top:4px;font-weight:600;}
+#eHead{font-size:clamp(24px,5.5vw,34px);letter-spacing:-1px;}
+#eSub{color:#bbb;font-size:14.5px;margin:8px 0 18px;line-height:1.7;}
+#eSub b{color:#fff;}
+table{width:100%;border-collapse:collapse;font-size:13.5px;text-align:left;margin-top:6px;}
+th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:#888;padding:8px;border-bottom:2px solid #333;}
+td{padding:10px 8px;border-bottom:1px solid #262626;color:#ddd;vertical-align:top;line-height:1.45;}
+td b{color:#fff;}
+.cta{margin-top:20px;padding:18px;border-radius:14px;background:linear-gradient(135deg,var(--red),#7a0000);font-size:15px;line-height:1.7;}
+.cta b{font-size:18px;display:block;margin-bottom:4px;}
+.when{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap;}
+.when div{background:#0005;border:1px solid #ffffff33;border-radius:10px;padding:9px 16px;font-weight:800;font-size:16px;}
+.when span{margin-right:6px;}
+.sess{margin-top:12px;font-size:13px;opacity:.85;font-style:italic;}
+.join{display:inline-block;margin-top:14px;background:#fff;color:var(--red);font-weight:900;font-size:16px;letter-spacing:.5px;
+  padding:13px 30px;border-radius:12px;text-decoration:none;box-shadow:0 5px 0 #0006;transition:transform .08s;}
+.join:active{transform:translateY(3px);box-shadow:0 2px 0 #0006;}
+.ghost{background:transparent;border:2px solid #444;color:#bbb;font-size:14px;padding:10px 22px;margin-top:18px;}
+.foot{margin-top:14px;color:#666;font-size:12px;}
+
+@media(max-width:560px){
+  #scene{height:280px;} .frame{width:146px;height:212px;}
+  .door .p1{height:74px;} .door .p2{top:104px;height:74px;} .knob{top:108px;} .keypad{top:72px;}
+  #clock{font-size:21px;} .show .v{font-size:13px;} #dots span{width:18px;}
+  #task,#res{padding:16px;} #tTitle{font-size:18px;}
+}
+</style>
+</head>
+<body>
+<div id="shell">
+
+<!-- INTRO -->
+<div id="intro">
+  <div class="tag">Learning Shot · Teaser</div>
+  <div class="bigclock">6:00 PM</div>
+  <h1>It's Friday. You have a movie at 8.</h1>
+  <div class="ticket">🎬 ADMIT ONE · SHOW 8:00 PM · SEAT F12</div>
+  <p>
+    But <b>5 tasks</b> stand between you and the popcorn.<br>
+    Each one is behind a locked door.<br>
+    Pick the <b>smartest way</b> to finish each task, and the door opens.<br>
+    Pick the slow way, and the clock keeps running.
+  </p>
+  <button class="big" onclick="start()">LET'S GO 🍿</button>
+  <div class="rule">3 minutes · one tap per door · no tricks</div>
+</div>
+
+<!-- GAME -->
+<div id="game" class="hide">
+  <div id="hud">
+    <div class="box"><div class="lbl">Time now</div><div id="clock">6:00 PM</div></div>
+    <div class="box" id="dots"></div>
+    <div class="box show"><div class="lbl">Movie</div><div class="v">8:00 PM</div></div>
+  </div>
+
+  <div id="scene">
+    <div id="world">
+      <div id="lamp"></div>
+      <div id="sign">Door 1 of 5</div>
+      <div class="frame" id="frame">
+        <div class="beyond">➜</div>
+        <div class="door" id="door">
+          <div class="panel p1"></div><div class="panel p2"></div>
+          <div class="plate" id="plate">01</div>
+          <div class="keypad"><div class="led" id="led"></div></div>
+          <div class="knob"></div>
+        </div>
+      </div>
+      <div id="floor"></div>
+    </div>
+    <div id="sfx"></div>
+  </div>
+
+  <div id="task">
+    <div id="tLabel"></div>
+    <div id="tTitle"></div>
+    <div id="tStory"></div>
+    <div class="q">How do you get it done?</div>
+    <div id="opts"></div>
+  </div>
+
+  <div id="res" class="hide">
+    <div id="rHead"><div id="rTitle"></div><div id="rCost"></div></div>
+    <div id="rText"></div>
+    <div id="rTool"></div>
+    <button class="big" id="rBtn"></button>
+  </div>
+</div>
+
+<!-- END -->
+<div id="end" class="hide">
+  <div class="screen" id="screen"><div class="big1" id="scrBig"></div><div class="small1" id="scrSmall"></div></div>
+  <div id="eHead"></div>
+  <div id="eSub"></div>
+
+  <div style="text-align:left;background:#111;border-radius:14px;padding:14px 14px 4px;">
+    <div style="font-size:13px;font-weight:800;margin:0 0 4px 8px;">The easy way through each door</div>
+    <table>
+      <tr><th>The task</th><th>The easy way</th><th>Tool</th></tr>
+      <tbody id="recap"></tbody>
+    </table>
+  </div>
+
+  <div class="cta">
+    <b>None of these need coding. Or a budget. Or an IT ticket.</b>
+    Come to the Learning Shot and we'll build them together, so Friday 6 PM is just Friday 6 PM.
+    <div class="when">
+      <div><span>📅</span>29 Sept 2026</div>
+      <div><span>⏰</span>3:00 – 4:00 PM</div>
+    </div>
+    <div class="sess">Reimagining the HR lifecycle with AI &amp; Power Automate</div>
+    <a class="join" id="joinLink" href="https://teams.microsoft.com/meet/449531360152781?p=rXCDDW576NIUrSL0CN" target="_blank" rel="noopener">JOIN ON TEAMS →</a>
+  </div>
+  <button class="ghost" onclick="location.reload()">↻ Play again</button>
+  <div class="foot">Reply with the time you left the office. Earliest exit gets a shout-out in the session.</div>
+</div>
+</div>
+
+<script>
+const DOORS=[
+ {label:"Performance",title:"Leader-wise check-in status",
+  story:"The check-in completion file just came in. 4,000 people. Every leader wants their own team's status tonight, with their HR partner copied.",
+  tool:"Python", easy:"One script splits the file into each leader's report, with a summary",
+  opts:[
+   {e:"📋",t:"Filter the sheet leader by leader, save 25 copies, attach each one to a mail",
+    ok:false,min:50,h:"Leader 17 just got Leader 16's file.",r:"Your phone is ringing. It's Leader 16. They're not happy."},
+   {e:"🔎",t:"Look up each team's numbers into a new sheet, then copy-paste them into 25 mails",
+    ok:false,min:40,h:"Row 3,812 broke your lookup.",r:"Half the teams show #N/A. You're redoing it by hand."},
+   {e:"⚡",t:"Run one script that makes every leader's file in one click, and do the same next month",
+    ok:true,min:3,h:"25 files. Zero mix-ups.",r:"Every leader gets only their team, with a clear summary on top. Next month, it's the same click."}
+  ]},
+ {label:"Learning",title:"Learning reminders to 300 managers",
+  story:"300 managers need a reminder about their team's learning progress. And it has to show their own team's names and numbers.",
+  tool:"Power Automate", easy:"A flow sends each manager their own team's table, every Monday",
+  opts:[
+   {e:"📢",t:"One mail to everyone: “Dear All, please ensure your team completes their learning”",
+    ok:false,min:30,h:"Sent. Ignored.",r:"Nobody reads “Dear All.” Instead you get 40 replies asking “is this for my team?”"},
+   {e:"✍️",t:"Write 300 separate mails, each with that manager's team pasted in",
+    ok:false,min:80,h:"Mail 112 of 300.",r:"You've typed “Hope you're doing well” 112 times. Your wrist has filed a complaint."},
+   {e:"⚡",t:"Set it up once: each manager gets their own team's table, and it repeats every Monday by itself",
+    ok:true,min:4,h:"300 personal mails. Sent.",r:"Each manager sees only their team, with their name on it. And you never have to send it again."}
+  ]},
+ {label:"HR Ops",title:"“Can you send me the policy again?”",
+  story:"Your Teams won't stop blinking. It's the same question for the 100th time this month: where is the leave policy?",
+  tool:"AI bot", easy:"A bot answers the common questions, any time of day",
+  opts:[
+   {e:"💬",t:"Reply to each person yourself. It's only polite",
+    ok:false,min:35,h:"12 more came in while you typed.",r:"You're politely answering the same thing again and again. You'll still be doing it next Friday."},
+   {e:"📌",t:"Pin the policy in a channel and hope people find it",
+    ok:false,min:20,h:"Nobody saw the pin.",r:"Three people have now asked where the pin is."},
+   {e:"⚡",t:"Set up a bot that answers the common questions, any time, even at 2 AM",
+    ok:true,min:3,h:"Question 101 answered in 2 seconds.",r:"The bot handles the repeat questions. You handle the conversations that actually need you."}
+  ]},
+ {label:"Hiring",title:"15 interviews to schedule",
+  story:"15 candidates. 4 interviewers. Everyone's calendar is a maze, and all of it has to be booked for next week.",
+  tool:"Power Automate + Forms", easy:"Candidates pick a free slot, and invites go out on their own",
+  opts:[
+   {e:"📧",t:"Mail back and forth with each candidate until a slot works",
+    ok:false,min:60,h:"47 mails later…",r:"Two candidates are booked for the same 11 AM. One interviewer is on leave that day."},
+   {e:"🗓️",t:"Make one big sheet of everyone's free time and match them up by hand",
+    ok:false,min:40,h:"Done! It's already out of date.",r:"While you matched slots, three calendars changed. Back to square one."},
+   {e:"⚡",t:"Send one link where candidates pick a free slot, and invites and reminders go out on their own",
+    ok:true,min:4,h:"15 interviews. Booked.",r:"Candidates choose, calendars update, and reminders go out the day before. You didn't touch a single invite."}
+  ]},
+ {label:"Engagement",title:"Make people excited about a launch",
+  story:"Last one. A new learning programme launches Monday. You need people to actually care, not just delete the mail.",
+  tool:"AI + GitHub", easy:"AI builds a small game, and it's shared free as a link",
+  opts:[
+   {e:"📎",t:"Send a mail with a 12-slide PDF attached",
+    ok:false,min:15,h:"Opened by 4 people.",r:"One of them was you. One was checking whether it was spam."},
+   {e:"🏢",t:"Ask an outside agency to build a microsite",
+    ok:false,min:90,h:"Waiting for approval…",r:"You'll get a quote in 3 weeks. The launch is on Monday."},
+   {e:"⚡",t:"Ask AI to build a small game about it, then share it free as a link",
+    ok:true,min:5,h:"Built in an evening. Free.",r:"People play it, share it and turn up curious. <b>Just like the game you're playing right now.</b> 😉"}
+  ]}
+];
+
+const $=id=>document.getElementById(id);
+let d=0, mins=0, wrongs=0, tries=[];
+const START=18*60, SHOW=20*60, TRAVEL=30;
+
+function fmt(m){const t=START+m;let h=Math.floor(t/60),mm=t%60;const ap=h>=12?"PM":"AM";h=h%12||12;return h+":"+String(mm).padStart(2,"0")+" "+ap;}
+function tickTo(target){
+  const from=mins; mins=target;
+  const steps=24;let i=0;
+  const iv=setInterval(()=>{i++;const v=Math.round(from+(target-from)*i/steps);
+    $("clock").textContent=fmt(v);
+    $("clock").className = START+v+TRAVEL>SHOW ? "late" : START+v+TRAVEL>SHOW-20 ? "warn" : "";
+    if(i>=steps)clearInterval(iv);},28);
+}
+function sfx(txt,col){const s=$("sfx");s.textContent=txt;s.style.color=col;s.classList.remove("go");void s.offsetWidth;s.classList.add("go");}
+function shuffle(a){return a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);}
+
+function start(){$("intro").classList.add("hide");$("game").classList.remove("hide");
+  $("dots").innerHTML=DOORS.map(()=>"<span></span>").join("");load();}
+
+function load(){
+  const D=DOORS[d]; tries[d]=0;
+  $("sign").textContent="Door "+(d+1)+" of 5 · "+D.label;
+  $("plate").textContent="0"+(d+1);
+  $("tLabel").textContent="Door "+(d+1)+" · "+D.label;
+  $("tTitle").textContent=D.title; $("tStory").textContent=D.story;
+  $("opts").innerHTML="";
+  shuffle(D.opts).forEach(o=>{
+    const b=document.createElement("button");b.className="opt";
+    b.innerHTML='<span class="e">'+o.e+"</span><span>"+o.t+"</span>";
+    b.onclick=()=>pick(o,b);$("opts").appendChild(b);
+  });
+  [...$("dots").children].forEach((s,i)=>s.className=i<d?"done":i===d?"now":"");
+  $("task").classList.remove("hide");$("res").classList.add("hide");
+}
+
+function pick(o,btn){
+  tries[d]++;
+  tickTo(mins+o.min);
+  $("task").classList.add("hide");
+  const r=$("res");r.classList.remove("hide","bad","good");
+  $("rTitle").textContent=o.h; $("rText").innerHTML=o.r; $("rCost").textContent="+"+o.min+" min";
+  if(!o.ok){
+    wrongs++; btn.classList.add("used");
+    r.classList.add("bad");
+    $("rTool").style.display="none";
+    const led=$("led");led.classList.remove("blink");void led.offsetWidth;led.classList.add("blink");
+    const door=$("door");door.classList.remove("rattle");void door.offsetWidth;door.classList.add("rattle");
+    sfx("LOCKED 🔒","#ff4d4d");
+    $("rBtn").textContent="Try another way";
+    $("rBtn").onclick=()=>{$("res").classList.add("hide");$("task").classList.remove("hide");};
+  } else {
+    r.classList.add("good");
+    $("rTool").style.display="block";
+    $("rTool").innerHTML="🔑 <b>The key:</b> "+DOORS[d].tool;
+    $("led").classList.add("ok");
+    sfx("CLICK 🔓","#2ECC71");
+    setTimeout(()=>{$("door").classList.add("open");$("frame").classList.add("opened");},350);
+    $("rBtn").textContent=d<4?"Walk through 🚪":"Run to the movie 🏃";
+    $("rBtn").onclick=walk;
+  }
+  r.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function walk(){
+  $("rBtn").onclick=null;
+  $("world").classList.add("walk");
+  setTimeout(()=>{
+    d++;
+    if(d>=DOORS.length) return finish();
+    $("door").classList.remove("open","rattle");$("frame").classList.remove("opened");$("led").className="led";
+    $("world").classList.remove("walk");$("world").classList.add("enter");
+    load();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      $("world").classList.remove("enter");
+      $("world").style.transition="transform .6s ease-out,opacity .6s";
+      setTimeout(()=>$("world").style.transition="",650);
+    }));
+    window.scrollTo({top:0,behavior:"smooth"});
+  },850);
+}
+
+function finish(){
+  $("game").classList.add("hide");$("end").classList.remove("hide");window.scrollTo(0,0);
+  const leave=fmt(mins), arrive=fmt(mins+TRAVEL), late=START+mins+TRAVEL-SHOW;
+  const scr=$("screen");
+  if(late<=0){
+    const spare=-late;
+    $("scrBig").textContent=spare>=45?"🍿 FRONT ROW":"🎬 JUST IN TIME";
+    $("scrSmall").textContent="Seat F12 · reached at "+arrive;
+    $("eHead").textContent = wrongs===0 ? "Perfect run. Popcorn's on you." : spare>=45 ? "You made it, with time for snacks." : "You made it. Just.";
+    $("eSub").innerHTML="Left office at <b>"+leave+"</b> · reached the cinema at <b>"+arrive+"</b><br>"+
+      (wrongs===0?"You picked the easy way every time. Let's explore more such use cases!":
+       "You tried the slow way <b>"+wrongs+"</b> time"+(wrongs>1?"s":"")+". That's how most Fridays go.");
+  } else {
+    scr.classList.add("dark");
+    $("scrBig").textContent="THE MOVIE STARTED";
+    $("scrSmall").textContent="without you · "+late+" min ago";
+    $("eHead").innerHTML='You missed the <span style="color:#E40000">movie</span>.';
+    $("eSub").innerHTML="Left office at <b>"+leave+"</b> · reached at <b>"+arrive+"</b><br>"+
+      "The slow way cost you <b>"+wrongs+"</b> wrong turns. Your friends sent you the interval selfie.";
+  }
+  $("recap").innerHTML=DOORS.map((D,i)=>
+    "<tr><td><b>"+D.title+"</b><br><span style='color:#888;font-size:12px'>"+D.label+" · "+(tries[i]===1?"✅ first try":"❌ "+(tries[i]-1)+" wrong turn"+(tries[i]>2?"s":""))+"</span></td><td>"+D.easy+"</td><td><b style='color:#FFC531'>"+D.tool+"</b></td></tr>").join("");
+}
+</script>
+</body>
+</html>
